@@ -20,5 +20,5 @@ groupIdList = "test"
 
 result = client.search(image, imageType, groupIdList);
 
-print(result)
+print(result)  # print result
 
