@@ -11,7 +11,8 @@ cap = cv2.VideoCapture(0)
 
 cap.set(3, 960)
 
-# print(cap.isOpened())
+if cap.isOpened():
+    print("Camera is on.")
 
 ss_cnt = 0
 
@@ -54,5 +55,8 @@ while cap.isOpened():
 
 
 cap.release()
+
+if not cap.isOpened():
+    print("Camera is off.")
 
 cv2.destroyAllWindows()
