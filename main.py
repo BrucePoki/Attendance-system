@@ -1,5 +1,6 @@
 from aip import AipFace  # AI core
 import base64  # for encode use
+# import dlib
 
 '''APP Detail'''
 APP_ID = '17074468'
