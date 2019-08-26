@@ -6,10 +6,9 @@ import base64  # for encode use
 APP_ID = '17074468'
 API_ID = 'tBs6GAGhr1hRow3KacUtQGGk'
 SECRET_KEY = 'A4iSePxNobpGFSupM4XTV0McSoqKqyFt'
-
 client = AipFace(APP_ID, API_ID, SECRET_KEY)  # Online detect client
 
-with open("//Users//bruce//Pictures//IMG_1334.jpeg", "rb") as f:
+with open("/Users/bruce/Desktop/screenshots/face_test.jpeg", "rb") as f:
     base64_data = base64.b64encode(f.read())
     # print(base64_data)  # encode check
 
