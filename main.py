@@ -194,16 +194,23 @@ def live_cam_detect(ss_path, sep_path, cc_path):
                         guest_list.append(read_path)
             print(reco_cnt, ' of ', faces, 'faces recognized. Process complete.')
             if unreco_cnt != 0:
-                regist_flag = input("Unemployee faces detected. Register? (Y/N)")
-                if regist_flag == 'Y' or regist_flag == 'y':
-                    for i in range(0, unreco_cnt):
-                        show_img(guest_list[i])
-                        name = input("Who is this(name)? Please watch the image on your right side.\n")
-                        face_register(online_client, guest_list[i], 'employee', name)
-                elif regist_flag == 'N' or regist_flag == 'n':
-                    for j in range(0, unreco_cnt):
-                        face_register(online_client, guest_list[j], 'guest', time.strftime("%Y-%m-%d-%H-%M-%S",
-                                                                                           time.localtime()))
+                type_flag = 1
+                while type_flag:
+                    regist_flag = input("Unemployee faces detected. Register? (Y/N)")
+                    if regist_flag == 'Y' or regist_flag == 'y':
+                        for i in range(0, unreco_cnt):
+                            show_img(guest_list[i])
+                            name = input("Who is this(name)? Please watch the image on your right side.\n")
+                            face_register(online_client, guest_list[i], 'employee', name)
+                            type_flag = 0
+                    elif regist_flag == 'N' or regist_flag == 'n':
+                        for j in range(0, unreco_cnt):
+                            face_register(online_client, guest_list[j], 'guest', time.strftime("%Y-%m-%d-%H-%M-%S",
+                                                                                               time.localtime()))
+                            type_flag = 0
+                    else:
+                        print('Invalid Command.')
+
 
         cv2.namedWindow("camera", 1)
         cv2.imshow("camera", img_rd)
