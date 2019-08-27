@@ -5,6 +5,8 @@ import time
 import numpy as np
 from aip import AipFace  # AI core
 import base64  # for encode use
+from PIL import Image
+import matplotlib.pyplot as plt
 
 '''APP Detail'''
 APP_ID = '17074468'
@@ -32,6 +34,14 @@ def makedir():
         print('Cache catalog already exists')
 
     return sep_path, ss_path, cc_path
+
+
+def show_img(path):
+    img = Image.open(path)
+    plt.figure('Guest')
+    plt.imshow(img)
+    plt.axis('off')
+    plt.show()
 
 
 def clear_images(path_save, path_cache):
@@ -93,6 +103,22 @@ def face_recognize(client, read_path):
     return result
 
 
+def face_register(client, read_path, group_id, usr_name):
+    with open(read_path, "rb") as f:
+        base64_data = base64.b64encode(f.read())
+        # print(base64_data)  # encode check
+
+    image = str(base64_data, 'utf-8')
+    # error record: error_code:222203 image check fail
+    # solution: specific type convert: utf-8
+    image_type = "BASE64"
+    group_id_list = group_id
+    user_id = usr_name
+
+    client.addUser(image, image_type, group_id_list, user_id)
+    print(user_id + " registration success!")
+
+
 def live_cam_detect(ss_path, sep_path, cc_path):
     path_screenshots = ss_path
 
@@ -134,16 +160,16 @@ def live_cam_detect(ss_path, sep_path, cc_path):
 
             img_rd = cv2.putText(img_rd, "Press 'S': Screen shot", (20, 400), font, 0.8, (255, 255, 255), 1,
                                  cv2.LINE_AA)
-            img_rd = cv2.putText(img_rd, "Press 'C': Confirm image", (20, 450), font, 0.8, (255, 255, 255), 1, cv2.LINE_AA)
+            img_rd = cv2.putText(img_rd, "Press 'C': Confirm image", (20, 450), font, 0.8, (255, 255, 255), 1,
+                                 cv2.LINE_AA)
             img_rd = cv2.putText(img_rd, "Press 'Q': Quit", (20, 500), font, 0.8, (255, 255, 255), 1, cv2.LINE_AA)
 
         if k & 0xFF == ord('s'):
             ss_cnt += 1
             print(path_screenshots + "screenshot" + "_" + str(ss_cnt) + "_" + time.strftime("%Y-%m-%d-%H-%M-%S",
                                                                                             time.localtime()) + ".jpg")
-            cv2.imwrite(path_screenshots + "screenshot" + "_" + str(ss_cnt) + "_" + time.strftime("%Y-%m-%d-%H-%M-%S",
-                                                                                                  time.localtime()) + ".jpg",
-                        img_rd)
+            cv2.imwrite(path_screenshots + "screenshot" + "_" + str(ss_cnt) + "_" +
+                        time.strftime("%Y-%m-%d-%H-%M-%S",time.localtime()) + ".jpg",img_rd)
 
         if k & 0xFF == ord('c'):
             print("Face info confirmed, detecting ...")
@@ -167,6 +193,17 @@ def live_cam_detect(ss_path, sep_path, cc_path):
                         unreco_cnt += 1
                         guest_list.append(read_path)
             print(reco_cnt, ' of ', faces, 'faces recognized. Process complete.')
+            if unreco_cnt != 0:
+                regist_flag = input("Unemployee faces detected. Register? (Y/N)")
+                if regist_flag == 'Y' or regist_flag == 'y':
+                    for i in range(0, unreco_cnt):
+                        show_img(guest_list[i])
+                        name = input("Who is this(name)? Please watch the image on your right side.\n")
+                        face_register(online_client, guest_list[i], 'employee', name)
+                elif regist_flag == 'N' or regist_flag == 'n':
+                    for j in range(0, unreco_cnt):
+                        face_register(online_client, guest_list[j], 'guest', time.strftime("%Y-%m-%d-%H-%M-%S",
+                                                                                           time.localtime()))
 
         cv2.namedWindow("camera", 1)
         cv2.imshow("camera", img_rd)
@@ -179,8 +216,12 @@ def live_cam_detect(ss_path, sep_path, cc_path):
     cv2.destroyAllWindows()
 
 
+print('Initiallizing ...')
 separate_path, screenshot_path, cache_path = makedir()
+
 live_cam_detect(screenshot_path, separate_path, cache_path)
+
+
 
 
 
