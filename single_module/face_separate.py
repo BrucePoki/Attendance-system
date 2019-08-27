@@ -4,7 +4,7 @@ import cv2
 import os
 
 path_read = "/Users/bruce/Desktop/screenshots/"
-img = cv2.imread(path_read + "multiple_faces_test.jpeg")
+img = cv2.imread(path_read + "screenshot_1_2019-08-27-10-52-53.jpg")
 
 path_save = "/Users/bruce/Desktop/screenshots/faces_separated/"
 
@@ -21,7 +21,7 @@ def clear_images():
 clear_images()
 
 detector = dlib.get_frontal_face_detector()
-predictor = dlib.shape_predictor('/Users/bruce/dlib/shape_predictor_68_face_landmarks 2.dat')
+# predictor = dlib.shape_predictor('/Users/bruce/dlib/shape_predictor_68_face_landmarks 2.dat')
 
 
 faces = detector(img, 1)
@@ -29,8 +29,8 @@ faces = detector(img, 1)
 print("人脸数: ", len(faces), '\n')
 
 for k, d in enumerate(faces):
-    pos_start = tuple([d.left(), d.top()])
-    pos_end = tuple([d.right(), d.bottom()])
+    # pos_start = tuple([d.left(), d.top()])
+    # pos_end = tuple([d.right(), d.bottom()])
 
     height = d.bottom() - d.top()
     width = d.right() - d.left()

@@ -32,12 +32,12 @@ while cap.isOpened():
         break
     else:
         if len(faces) != 0:
-            faces_start_width = 0
+            # faces_start_width = 0
 
             for face in faces:
                 cv2.rectangle(img_rd, tuple([face.left(), face.top()]), tuple([face.right(), face.bottom()]), (0,255,255), 2)
-                height = face.bottom() - face.top()
-                width = face.right() - face.left()
+                # height = face.bottom() - face.top()
+                # width = face.right() - face.left()
             cv2.putText(img_rd, "Faces in all: " + str(len(faces)), (20, 350), font, 0.8, (0, 0, 0), 1, cv2.LINE_AA)
         else:
             cv2.putText(img_rd, "no face", (20, 350), font, 0.8, (0, 0, 0), 1, cv2.LINE_AA)
