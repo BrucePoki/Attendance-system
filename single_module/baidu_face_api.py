@@ -18,7 +18,8 @@ image = str(base64_data, 'utf-8')
 imageType = "BASE64"
 groupIdList = "test"
 
-result = client.search(image, imageType, groupIdList);
-
+userId = 'test'
+# result = client.search(image, imageType, groupIdList);
+result = client.addUser(image, imageType, groupIdList, userId)
 print(result)
 

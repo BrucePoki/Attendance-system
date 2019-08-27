@@ -93,7 +93,7 @@ def face_recognize(client, read_path):
     # error record: error_code:222203 image check fail
     # solution: specific type convert: utf-8
     image_type = "BASE64"
-    group_id_list = "test"
+    group_id_list = "employee"
 
     # options = {}
     # options["match_threshold"] = 80
@@ -115,8 +115,10 @@ def face_register(client, read_path, group_id, usr_name):
     group_id_list = group_id
     user_id = usr_name
 
-    client.addUser(image, image_type, group_id_list, user_id)
-    print(user_id + " registration success!")
+    result = client.addUser(image, image_type, group_id_list, user_id)
+    if group_id != 'guest':
+        print(user_id + " registration success!")
+    return result
 
 
 def live_cam_detect(ss_path, sep_path, cc_path):
@@ -196,7 +198,7 @@ def live_cam_detect(ss_path, sep_path, cc_path):
             if unreco_cnt != 0:
                 type_flag = 1
                 while type_flag:
-                    regist_flag = input("Unemployee faces detected. Register? (Y/N)")
+                    regist_flag = input("Unemployee faces detected. Register? (Y/N)\n")
                     if regist_flag == 'Y' or regist_flag == 'y':
                         for i in range(0, unreco_cnt):
                             show_img(guest_list[i])
@@ -205,12 +207,12 @@ def live_cam_detect(ss_path, sep_path, cc_path):
                             type_flag = 0
                     elif regist_flag == 'N' or regist_flag == 'n':
                         for j in range(0, unreco_cnt):
-                            face_register(online_client, guest_list[j], 'guest', time.strftime("%Y-%m-%d-%H-%M-%S",
-                                                                                               time.localtime()))
+                            result = face_register(online_client, guest_list[j], 'guest',
+                                                   time.strftime("%Y%m%d%H%M%S", time.localtime()))
+                            print(result)
                             type_flag = 0
                     else:
                         print('Invalid Command.')
-
 
         cv2.namedWindow("camera", 1)
         cv2.imshow("camera", img_rd)
