@@ -15,17 +15,35 @@ SECRET_KEY = 'A4iSePxNobpGFSupM4XTV0McSoqKqyFt'
 online_client = AipFace(APP_ID, API_ID, SECRET_KEY)  # Online detect client
 
 
+def network_test():
+    flag = 1
+    while flag:
+        exit_code = os.system('ping -c 3 www.baidu.com')
+        if exit_code:
+            print('Connection Lost.\nThis software requires Online Network.')
+            print('Next connection check in 10s')
+            time.sleep(10)
+        else:
+            print('Network Connection checked sucessful.')
+            flag = 0
+
+
 def makedir():
-    root_path = os.path.dirname(os.path.abspath(__file__))
+    """
+初始化创建必需的缓存文件夹。包括截图文件夹，人脸分离文件夹以及人脸检测缓存文件夹
+    :return: 返回三种文件夹的路径str
+    """
+    root_path = os.path.dirname(os.path.abspath(__file__))  # 获取main.py所在文件夹的绝对路径
 
+    # 直观地创建三个文件夹的路径
     sep_path = root_path + "/screenshots/faces_separated/"
-
     ss_path = root_path + "/screenshots/"
-
     cc_path = root_path + "/cache/"
 
+    # 检测路径是否已经存在
     is_exists = os.path.exists(sep_path) and os.path.exists(cc_path)
 
+    # 如果没有存在则创建，如果存在则跳过创建
     if not is_exists:
         os.makedirs(sep_path)
         os.makedirs(cc_path)
@@ -37,14 +55,23 @@ def makedir():
 
 
 def show_img(path):
+    """
+辅助用函数，用于显示图片。入口参数为图片路径。用户不可修改路径，软件内置。
+    :param path: 图片路径
+    """
     img = Image.open(path)
     plt.figure('Guest')
     plt.imshow(img)
     plt.axis('off')
-    plt.show()
+    plt.show()  # 显示函数
 
 
 def clear_images(path_save, path_cache):
+    """
+清除所在文件夹的所有图片，用于初始化
+    :param path_save: 截图存储路径
+    :param path_cache: 缓存图片存储路径
+    """
     imgs = os.listdir(path_save)
     imgc = os.listdir(path_cache)
     for img in imgs:
@@ -56,14 +83,21 @@ def clear_images(path_save, path_cache):
 
 
 def face_separate(cc_path, sep_path, detector):
+    """
+人脸分离函数。主要功能是将人脸从静态图片中剪切并导出。
+    :param cc_path: 缓存图片路径，用于存储原始图片
+    :param sep_path: 被剪切的人脸图像保存路径
+    :param detector: dlib参数，此处用作入口参数传入减小代码重复率
+    :return: 返回检测到的人脸数量
+    """
     path_read = cc_path
-    img = cv2.imread(path_read + "confirm_cache.jpg")
+    img = cv2.imread(path_read + "confirm_cache.jpg")  # 从缓存路径读取原始图片
 
     path_save = sep_path
 
-    clear_images(path_save, cc_path)
+    clear_images(path_save, cc_path)  # 清除缓存
 
-    faces = detector(img, 1)
+    faces = detector(img, 1)  # 检测人脸数
 
     print("Number of Faces detected: ", len(faces), '\n')
 
@@ -72,100 +106,141 @@ def face_separate(cc_path, sep_path, detector):
         height = d.bottom() - d.top()
         width = d.right() - d.left()
 
-        img_blank = np.zeros((height, width, 3), np.uint8)
+        img_blank = np.zeros((height, width, 3), np.uint8)  # 设置剪切图片的宽高
 
         for i in range(height):
             for j in range(width):
                 img_blank[i][j] = img[d.top() + i][d.left() + j]
 
         # print("Save to: ", path_save + "img_face_", str(k + 1) + ".jpg")
-        cv2.imwrite(path_save + "img_face_" + str(k + 1) + ".jpg", img_blank)
+        cv2.imwrite(path_save + "img_face_" + str(k + 1) + ".jpg", img_blank)  # 依次写入剪切的图片
 
     return len(faces)
 
 
 def face_recognize(client, read_path):
-    with open(read_path, "rb") as f:
+    """
+该模块用于人脸比对，利用百度ai人脸识别接口
+    :param client: 百度ai客户端验证
+    :param read_path: 人脸图片读取路径
+    :return: 返回识别结果
+    """
+    with open(read_path, "rb") as f:  # 打开文件
         base64_data = base64.b64encode(f.read())
         # print(base64_data)  # encode check
 
     image = str(base64_data, 'utf-8')
     # error record: error_code:222203 image check fail
     # solution: specific type convert: utf-8
-    image_type = "BASE64"
+    image_type = "BASE64"  # 默认
     group_id_list = "employee"
 
     # options = {}
     # options["match_threshold"] = 80
+    # 相似度可选，后来选择的自己手动检测相似度这样更加灵活
 
+    # 模块核心函数
     result = client.search(image, image_type, group_id_list)
 
     return result
 
 
 def face_register(client, read_path, group_id, usr_name):
-    with open(read_path, "rb") as f:
+    """
+人脸注册模块，主要是向云端上传人脸图片以及自定义人名
+    :param client: 减少复用，client作为参数传入
+    :param read_path: 上传图片的路径
+    :param group_id:云端图片组名称
+    :param usr_name: 新注册用户名称
+    :return: 返回注册结果
+    """
+    with open(read_path, "rb") as f:  # 打开文件
         base64_data = base64.b64encode(f.read())
         # print(base64_data)  # encode check
 
     image = str(base64_data, 'utf-8')
     # error record: error_code:222203 image check fail
     # solution: specific type convert: utf-8
-    image_type = "BASE64"
+    image_type = "BASE64"  # 默认
     group_id_list = group_id
     user_id = usr_name
 
-    result = client.addUser(image, image_type, group_id_list, user_id)
-    if group_id != 'guest':
+    options = {"action_type": "APPEND"}  # 选项设置，此处设定注册重复名称则追加照片，不覆盖
+    # 模块核心函数
+    result = client.addUser(image, image_type, group_id_list, user_id, options)
+    if group_id != 'guest':  # 如果注册的是guest则不显示签到成功信息，只记录
         print(user_id + " registration success!")
+    # 如果出现错误则打印错误信息。
+    # 错误历史记录：名字过长导致图片上传失败，当时没有传回报错信息。
+    # 故此处添加了如果出错则打印出错信息。
+    if result['error_msg'] != 'SUCCESS':
+        print('register failed. Error message:' + result['error_msg'])
     return result
 
 
 def live_cam_detect(ss_path, sep_path, cc_path):
+    """
+程序核心函数，主要利用opencv使用摄像头，然后调用上述函数进行完整的程序过程
+    :param ss_path: screenshots路径
+    :param sep_path: separate路径
+    :param cc_path: 缓存路径
+    """
     path_screenshots = ss_path
 
+    # 人脸检测模块
     detector = dlib.get_frontal_face_detector()
+    # dlib同样支持轮廓预测
     # predictor = dlib.shape_predictor(pre_path)
 
+    # 开启笔记本默认摄像头
     cap = cv2.VideoCapture(0)
 
+    # 设置分辨率及格式
     cap.set(3, 960)
 
-    if cap.isOpened():
+    if cap.isOpened():  # 检测摄像头是否开启
         print("Camera is on.")
 
-    ss_cnt = 0
+    ss_cnt = 0  # 仅用于screenshot计数，图片起名字用。测试用
 
-    while cap.isOpened():
-        flag, img_rd = cap.read()
+    while cap.isOpened():  # 程序主循环，保持摄像头开启状态
+        flag, img_rd = cap.read()  # 两个参数，
+        # 一个flag是接收读取图片状态，即True or False第二个是frame表示截取到的一帧的图片
 
-        k = cv2.waitKey(1)
+        k = cv2.waitKey(1)  # 等待信号指令
 
         img_gray = cv2.cvtColor(img_rd, cv2.COLOR_RGB2GRAY)
+        # 灰度测试并保存，用于人脸的探测
+        # 灰度有利于提高检测速度
 
-        faces = detector(img_gray, 0)
+        faces = detector(img_gray, 0)  # 利用灰度检查人脸
 
-        font = cv2.FONT_HERSHEY_SIMPLEX
+        font = cv2.FONT_HERSHEY_SIMPLEX  # 设置指令显示的字体
 
-        if k & 0xFF == ord('q'):
+        if k & 0xFF == ord('q'):  # 输入q时退出循环
             break
-        else:
+        else:  # 否则，开始干正事
+            # 开始画方框用于标识人脸
             if len(faces) != 0:
 
-                for face in faces:
+                for face in faces:  # faces并非数字类型，其包含了众多实用的函数通过这些函数计算出矩形框的长宽
                     cv2.rectangle(img_rd, tuple([face.left(), face.top()]), tuple([face.right(), face.bottom()]),
                                   (0, 255, 255), 2)
 
+                # 写入文字，显示总共显示的人脸数
                 cv2.putText(img_rd, "Faces in all: " + str(len(faces)), (20, 350), font, 0.8, (0, 0, 0), 1, cv2.LINE_AA)
-            else:
+
+            else:  # 如果人脸数为零则显示没有脸
                 cv2.putText(img_rd, "no face", (20, 350), font, 0.8, (0, 0, 0), 1, cv2.LINE_AA)
 
+            # 注明指令和要求
             img_rd = cv2.putText(img_rd, "Press 'S': Screen shot", (20, 400), font, 0.8, (255, 255, 255), 1,
                                  cv2.LINE_AA)
             img_rd = cv2.putText(img_rd, "Press 'C': Confirm image", (20, 450), font, 0.8, (255, 255, 255), 1,
                                  cv2.LINE_AA)
             img_rd = cv2.putText(img_rd, "Press 'Q': Quit", (20, 500), font, 0.8, (255, 255, 255), 1, cv2.LINE_AA)
 
+        # s键保存截图，仅作为初期测试用功能
         if k & 0xFF == ord('s'):
             ss_cnt += 1
             print(path_screenshots + "screenshot" + "_" + str(ss_cnt) + "_" + time.strftime("%Y-%m-%d-%H-%M-%S",
@@ -173,59 +248,69 @@ def live_cam_detect(ss_path, sep_path, cc_path):
             cv2.imwrite(path_screenshots + "screenshot" + "_" + str(ss_cnt) + "_" +
                         time.strftime("%Y-%m-%d-%H-%M-%S",time.localtime()) + ".jpg",img_rd)
 
+        # c->confirm 确认录入信息，程序开始进行比对
         if k & 0xFF == ord('c'):
             print("Face info confirmed, detecting ...")
-            cv2.imwrite(cc_path + "confirm_cache.jpg", img_rd)
-            faces = face_separate(cc_path, sep_path, detector)
+            cv2.imwrite(cc_path + "confirm_cache.jpg", img_rd)  # 将截图写入缓存路径
+            faces = face_separate(cc_path, sep_path, detector)  # 从缓存路径读取原始图片并分割
             print(faces, " faces detected. Recognizing...")
             print("Please Wait ...")
+
             stuff_list = []
             guest_list = []
             reco_cnt = 0
             unreco_cnt = 0
+
             for face_num in range(0, faces):
-                read_path = sep_path + "img_face_" + str(face_num + 1) + ".jpg"
-                result = face_recognize(online_client, read_path)
-                if result['error_msg'] == 'SUCCESS':
-                    if result['result']['user_list'][0]['score'] >= 80:
+                read_path = sep_path + "img_face_" + str(face_num + 1) + ".jpg"  # 自动依次读取分割路径下的图片
+                result = face_recognize(online_client, read_path)  # 开始上传检测
+                if result['error_msg'] == 'SUCCESS':  # 如果检测成功
+                    if result['result']['user_list'][0]['score'] >= 80:  # 相似度阀值定为80
                         stuff_list.append(result['result']['user_list'][0]['user_id'])
                         reco_cnt += 1
-                        print('Welcome ', stuff_list[reco_cnt - 1], '! Check in successful.')
-                    else:
+                        print('**Welcome ', stuff_list[reco_cnt - 1], '! Check in successful.')
+                    else:  # 未达到80相似度，稍后询问是否手动录入
                         unreco_cnt += 1
                         guest_list.append(read_path)
+
             print(reco_cnt, ' of ', faces, 'faces recognized. Process complete.')
+
+            # 如果存在未识别的人脸
             if unreco_cnt != 0:
                 type_flag = 1
-                while type_flag:
+                while type_flag:  # type flag仅作为防止输入错误指令用
                     regist_flag = input("Unemployee faces detected. Register? (Y/N)\n")
                     if regist_flag == 'Y' or regist_flag == 'y':
                         for i in range(0, unreco_cnt):
                             show_img(guest_list[i])
                             name = input("Who is this(name)? Please watch the image on your right side.\n")
-                            face_register(online_client, guest_list[i], 'employee', name)
+                            face_register(online_client, guest_list[i], 'employee', name)  # 录入姓名
                             type_flag = 0
                     elif regist_flag == 'N' or regist_flag == 'n':
                         for j in range(0, unreco_cnt):
-                            result = face_register(online_client, guest_list[j], 'guest',
-                                                   time.strftime("%Y%m%d%H%M%S", time.localtime()))
-                            print(result)
-                            type_flag = 0
+                            face_register(online_client, guest_list[j], 'guest', time.strftime("%Y%m%d%H%M%S"
+                                                                                               , time.localtime()))
+                            type_flag = 0  # 如果录入成功则改变flag终止循环
                     else:
                         print('Invalid Command.')
 
+        # 设置摄像头窗口的相关参数
         cv2.namedWindow("camera", 1)
         cv2.imshow("camera", img_rd)
 
     cap.release()
 
-    if not cap.isOpened():
+    if not cap.isOpened():  # 检测摄像头状态
         print("Camera is off.")
 
-    cv2.destroyAllWindows()
+    cv2.destroyAllWindows()  # 关闭所有窗口
 
 
+# 主函数部分
 print('Initiallizing ...')
+
+# network_test() 测试功能哈哈哈，先不用。用于监测网络连接状态
+
 separate_path, screenshot_path, cache_path = makedir()
 
 live_cam_detect(screenshot_path, separate_path, cache_path)
