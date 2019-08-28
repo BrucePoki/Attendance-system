@@ -1,7 +1,11 @@
 import os
 import cv2
+import xlwt
+import xlrd
 import dlib
 import time
+import shutil
+from xlutils.copy import copy
 import numpy as np
 from aip import AipFace  # AI core
 import base64  # for encode use
@@ -39,19 +43,44 @@ def makedir():
     sep_path = root_path + "/screenshots/faces_separated/"
     ss_path = root_path + "/screenshots/"
     cc_path = root_path + "/cache/"
+    log_path = root_path + "/log/"
+    past_log = log_path + "record/"
 
     # 检测路径是否已经存在
-    is_exists = os.path.exists(sep_path) and os.path.exists(cc_path)
+    is_exists = os.path.exists(sep_path) and os.path.exists(cc_path) and os.path.exists(log_path)
 
     # 如果没有存在则创建，如果存在则跳过创建
     if not is_exists:
         os.makedirs(sep_path)
         os.makedirs(cc_path)
+        os.makedirs(log_path)
+        os.makedirs(past_log)
         print('Cache path created')
     else:
         print('Cache catalog already exists')
 
     return sep_path, ss_path, cc_path
+
+
+def initialize(client):
+    if os.path.exists("./log/employee.xls"):
+        shutil.move("./log/employee.xls", "./log/record/" + time.strftime("%Y%m%d%H%M%S", time.localtime()) + '.xls')
+    xls = xlwt.Workbook()
+    sht1 = xls.add_sheet('Sheet1')
+    sht1.write(0, 0, 'Name')
+    sht1.write(0, 1, 'Status')
+    sht1.write(0, 2, 'Reg time')
+    result = client.getGroupUsers('employee')
+    length = len(result['result']['user_id_list'])
+    for i in range(0, length):
+        sht1.write(i + 1, 0, result['result']['user_id_list'][i])
+        sht1.write(i + 1, 1, 'Unregistered')
+    sht1.col(0).width = 15 * 256
+    sht1.col(1).width = 15 * 256
+    sht1.col(2).width = 20 * 256
+
+    xls.save('./log/employee.xls')
+    return result['result']['user_id_list']
 
 
 def show_img(path):
@@ -178,7 +207,7 @@ def face_register(client, read_path, group_id, usr_name):
     return result
 
 
-def live_cam_detect(ss_path, sep_path, cc_path):
+def live_cam_detect(ss_path, sep_path, cc_path, usr_list):
     """
 程序核心函数，主要利用opencv使用摄像头，然后调用上述函数进行完整的程序过程
     :param ss_path: screenshots路径
@@ -228,17 +257,19 @@ def live_cam_detect(ss_path, sep_path, cc_path):
                                   (0, 255, 255), 2)
 
                 # 写入文字，显示总共显示的人脸数
-                cv2.putText(img_rd, "Faces in all: " + str(len(faces)), (20, 350), font, 0.8, (0, 0, 0), 1, cv2.LINE_AA)
+                cv2.putText(img_rd, "Faces in all: " + str(len(faces)), (20, 350), font, 0.8, (255, 215, 0), 2
+                            , cv2.LINE_AA)
 
             else:  # 如果人脸数为零则显示没有脸
                 cv2.putText(img_rd, "no face", (20, 350), font, 0.8, (0, 0, 0), 1, cv2.LINE_AA)
 
             # 注明指令和要求
-            img_rd = cv2.putText(img_rd, "Press 'S': Screen shot", (20, 400), font, 0.8, (255, 255, 255), 1,
+            img_rd = cv2.putText(img_rd, "Press 'S': Screen shot", (20, 400), font, 0.8, (255, 215, 0), 2,
                                  cv2.LINE_AA)
-            img_rd = cv2.putText(img_rd, "Press 'C': Confirm image", (20, 450), font, 0.8, (255, 255, 255), 1,
+            img_rd = cv2.putText(img_rd, "Press 'C': Confirm image", (20, 450), font, 0.8, (255, 215, 0), 2,
                                  cv2.LINE_AA)
-            img_rd = cv2.putText(img_rd, "Press 'Q': Quit", (20, 500), font, 0.8, (255, 255, 255), 1, cv2.LINE_AA)
+            img_rd = cv2.putText(img_rd, "Press 'Q': Quit", (20, 500), font, 0.8, (255, 215, 0), 2, cv2.LINE_AA)
+            img_rd = cv2.putText(img_rd, "Press 'O': Output", (20, 550), font, 0.8, (255, 215, 0), 2, cv2.LINE_AA)
 
         # s键保存截图，仅作为初期测试用功能
         if k & 0xFF == ord('s'):
@@ -246,7 +277,7 @@ def live_cam_detect(ss_path, sep_path, cc_path):
             print(path_screenshots + "screenshot" + "_" + str(ss_cnt) + "_" + time.strftime("%Y-%m-%d-%H-%M-%S",
                                                                                             time.localtime()) + ".jpg")
             cv2.imwrite(path_screenshots + "screenshot" + "_" + str(ss_cnt) + "_" +
-                        time.strftime("%Y-%m-%d-%H-%M-%S",time.localtime()) + ".jpg",img_rd)
+                        time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()) + ".jpg", img_rd)
 
         # c->confirm 确认录入信息，程序开始进行比对
         if k & 0xFF == ord('c'):
@@ -269,6 +300,13 @@ def live_cam_detect(ss_path, sep_path, cc_path):
                         stuff_list.append(result['result']['user_list'][0]['user_id'])
                         reco_cnt += 1
                         print('**Welcome ', stuff_list[reco_cnt - 1], '! Check in successful.')
+                        rb = xlrd.open_workbook('./log/employee.xls')
+                        wb = copy(rb)
+                        ws = wb.get_sheet(0)
+                        ws.write(usr_list.index(stuff_list[reco_cnt - 1]) + 1, 1, 'Registered')
+                        ws.write(usr_list.index(stuff_list[reco_cnt - 1]) + 1, 2, time.strftime("%Y-%m-%d %H:%M:%S"
+                                                                                                , time.localtime()))
+                        wb.save('./log/employee.xls')
                     else:  # 未达到80相似度，稍后询问是否手动录入
                         unreco_cnt += 1
                         guest_list.append(read_path)
@@ -285,6 +323,9 @@ def live_cam_detect(ss_path, sep_path, cc_path):
                             show_img(guest_list[i])
                             name = input("Who is this(name)? Please watch the image on your right side.\n")
                             face_register(online_client, guest_list[i], 'employee', name)  # 录入姓名
+                            ws.write(len(usr_list) + 2, 0, name)
+                            ws.write(len(usr_list) + 2, 1, 'Registered')
+                            ws.write(len(usr_list) + 2, 2, time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()))
                             type_flag = 0
                     elif regist_flag == 'N' or regist_flag == 'n':
                         for j in range(0, unreco_cnt):
@@ -293,6 +334,17 @@ def live_cam_detect(ss_path, sep_path, cc_path):
                             type_flag = 0  # 如果录入成功则改变flag终止循环
                     else:
                         print('Invalid Command.')
+
+        if k & 0xFF == ord('o'):
+            output_path = input("Please input output path (Backspace for default path):")
+            if output_path == ' ':
+                shutil.copy('./log/employee.xls', './')
+                print('File has been saved to ' + os.path.dirname(os.path.abspath('./employee.xls')))
+            elif os.path.exists(output_path):
+                shutil.copy('./log/employee.xls', output_path)
+                print('File has been saved to ' + output_path)
+            else:
+                print('Invalid path.')
 
         # 设置摄像头窗口的相关参数
         cv2.namedWindow("camera", 1)
@@ -309,12 +361,14 @@ def live_cam_detect(ss_path, sep_path, cc_path):
 # 主函数部分
 print('Initiallizing ...')
 
+userList = initialize(online_client)
 # network_test() 测试功能哈哈哈，先不用。用于监测网络连接状态
 
 separate_path, screenshot_path, cache_path = makedir()
 
-live_cam_detect(screenshot_path, separate_path, cache_path)
+live_cam_detect(screenshot_path, separate_path, cache_path, userList)
 
+os.system('open ' + os.path.dirname(os.path.abspath('./log/employee.xls')) + '/employee.xls')
 
 
 
