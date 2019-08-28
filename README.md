@@ -12,4 +12,7 @@
 
 [https://blog.csdn.net/qq_41646358/article/details/81292310](https://blog.csdn.net/qq_41646358/article/details/81292310)
 
+[https://blog.csdn.net/yaningli/article/details/86736108](https://blog.csdn.net/yaningli/article/details/86736108)
+
+学长的思路借鉴：[https://github.com/inspurer/WorkAttendanceSystem](https://github.com/inspurer/WorkAttendanceSystem)
 
