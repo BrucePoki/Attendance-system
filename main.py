@@ -391,12 +391,12 @@ def live_cam_detect(ss_path, sep_path, cc_path, usr_list):
 # 主函数部分
 print('Initiallizing ...')
 
-userList = initialize(online_client)
-
 # network_test() 测试功能哈哈哈，先不用。用于监测网络连接状态
 
 # 创建程序所需的目录
 separate_path, screenshot_path, cache_path = makedir()
+
+userList = initialize(online_client)
 
 # 程序核心函数，打开摄像头并开始接收指令
 live_cam_detect(screenshot_path, separate_path, cache_path, userList)
