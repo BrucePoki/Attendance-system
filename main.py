@@ -1,16 +1,17 @@
-import os
-import cv2
-import xlwt
-import xlrd
-import dlib
-import time
-import shutil
-from xlutils.copy import copy
-import numpy as np
-from aip import AipFace  # AI core
+import xlwt  # Excel表格相关
+import xlrd  # Excel表格相关
+import dlib  # 人脸识别核心库
+import time  # 用于获取当前时间
+import shutil  # 文件的相关操作
+import numpy as np  # 人脸识别相关
 import base64  # for encode use
-from PIL import Image
-import matplotlib.pyplot as plt
+import os  # 调用系统功能，路径，控制台等
+import cv2  # opencv，用于图像识别和摄像头等
+import matplotlib.pyplot as plt  # 图像显示
+
+from PIL import Image  # 图像处理
+from aip import AipFace  # AI core
+from xlutils.copy import copy  # Excel相关
 
 '''APP Detail'''
 APP_ID = '17074468'
@@ -20,6 +21,9 @@ online_client = AipFace(APP_ID, API_ID, SECRET_KEY)  # Online detect client
 
 
 def network_test():
+    """
+临时起意想写的测试网络的小函数。。。
+    """
     flag = 1
     while flag:
         exit_code = os.system('ping -c 3 www.baidu.com')
@@ -63,23 +67,31 @@ def makedir():
 
 
 def initialize(client):
+    """
+初始化函数，主要是在执行主程序前准备好出勤表格
+    :param client: 为了从云端服务器获取员工信息并在本地建立表格
+    :return: 返回获取的员工列表
+    """
     if os.path.exists("./log/employee.xls"):
+        # 如果原存储员工表格的路径已经存在则转移到日志记录路径作为保存
         shutil.move("./log/employee.xls", "./log/record/" + time.strftime("%Y%m%d%H%M%S", time.localtime()) + '.xls')
-    xls = xlwt.Workbook()
-    sht1 = xls.add_sheet('Sheet1')
+    xls = xlwt.Workbook()  # 创建Excel表格文件
+    sht1 = xls.add_sheet('Sheet1')  # 创建工作表
+
+    # 添加列标题
     sht1.write(0, 0, 'Name')
     sht1.write(0, 1, 'Status')
     sht1.write(0, 2, 'Reg time')
+
+    # 从云端获取列表
     result = client.getGroupUsers('employee')
-    length = len(result['result']['user_id_list'])
+    length = len(result['result']['user_id_list'])  # 取得列表长度
+
+    # 默认初始员工状态为未注册
     for i in range(0, length):
         sht1.write(i + 1, 0, result['result']['user_id_list'][i])
         sht1.write(i + 1, 1, 'Unregistered')
-    sht1.col(0).width = 15 * 256
-    sht1.col(1).width = 15 * 256
-    sht1.col(2).width = 20 * 256
-
-    xls.save('./log/employee.xls')
+    xls.save('./log/employee.xls')  # 保存至默认路径
     return result['result']['user_id_list']
 
 
@@ -108,7 +120,7 @@ def clear_images(path_save, path_cache):
     for img in imgc:
         os.remove(path_cache + img)
 
-    print("Clean finish", '\n')
+    print("Catalog Clean finished.", '\n')
 
 
 def face_separate(cc_path, sep_path, detector):
@@ -210,6 +222,7 @@ def face_register(client, read_path, group_id, usr_name):
 def live_cam_detect(ss_path, sep_path, cc_path, usr_list):
     """
 程序核心函数，主要利用opencv使用摄像头，然后调用上述函数进行完整的程序过程
+    :param usr_list: 从参数入口传入初始化获取的员工列表
     :param ss_path: screenshots路径
     :param sep_path: separate路径
     :param cc_path: 缓存路径
@@ -263,7 +276,7 @@ def live_cam_detect(ss_path, sep_path, cc_path, usr_list):
             else:  # 如果人脸数为零则显示没有脸
                 cv2.putText(img_rd, "no face", (20, 350), font, 0.8, (0, 0, 0), 1, cv2.LINE_AA)
 
-            # 注明指令和要求
+            # 注明指令和要求并设置字体格式 字体：HERSHEY_SIMPLEX 颜色：GOLD 粗细：2
             img_rd = cv2.putText(img_rd, "Press 'S': Screen shot", (20, 400), font, 0.8, (255, 215, 0), 2,
                                  cv2.LINE_AA)
             img_rd = cv2.putText(img_rd, "Press 'C': Confirm image", (20, 450), font, 0.8, (255, 215, 0), 2,
@@ -281,16 +294,17 @@ def live_cam_detect(ss_path, sep_path, cc_path, usr_list):
 
         # c->confirm 确认录入信息，程序开始进行比对
         if k & 0xFF == ord('c'):
+            print('\n', '*' * 50, '\n')
             print("Face info confirmed, detecting ...")
             cv2.imwrite(cc_path + "confirm_cache.jpg", img_rd)  # 将截图写入缓存路径
             faces = face_separate(cc_path, sep_path, detector)  # 从缓存路径读取原始图片并分割
             print(faces, " faces detected. Recognizing...")
             print("Please Wait ...")
 
-            stuff_list = []
-            guest_list = []
-            reco_cnt = 0
-            unreco_cnt = 0
+            stuff_list = []  # 员工列表
+            guest_list = []  # 客人列表
+            reco_cnt = 0  # 识别出的人脸数
+            unreco_cnt = 0  # 未识别出的人脸数
 
             for face_num in range(0, faces):
                 read_path = sep_path + "img_face_" + str(face_num + 1) + ".jpg"  # 自动依次读取分割路径下的图片
@@ -299,7 +313,9 @@ def live_cam_detect(ss_path, sep_path, cc_path, usr_list):
                     if result['result']['user_list'][0]['score'] >= 80:  # 相似度阀值定为80
                         stuff_list.append(result['result']['user_list'][0]['user_id'])
                         reco_cnt += 1
-                        print('**Welcome ', stuff_list[reco_cnt - 1], '! Check in successful.')
+                        print('* *Welcome ', stuff_list[reco_cnt - 1], '! Check in successful.* *')
+
+                        # 打开已经初始化的表格准备修改状态
                         rb = xlrd.open_workbook('./log/employee.xls')
                         wb = copy(rb)
                         ws = wb.get_sheet(0)
@@ -307,6 +323,7 @@ def live_cam_detect(ss_path, sep_path, cc_path, usr_list):
                         ws.write(usr_list.index(stuff_list[reco_cnt - 1]) + 1, 2, time.strftime("%Y-%m-%d %H:%M:%S"
                                                                                                 , time.localtime()))
                         wb.save('./log/employee.xls')
+
                     else:  # 未达到80相似度，稍后询问是否手动录入
                         unreco_cnt += 1
                         guest_list.append(read_path)
@@ -320,37 +337,50 @@ def live_cam_detect(ss_path, sep_path, cc_path, usr_list):
                     regist_flag = input("Unemployee faces detected. Register? (Y/N)\n")
                     if regist_flag == 'Y' or regist_flag == 'y':
                         for i in range(0, unreco_cnt):
-                            show_img(guest_list[i])
+                            show_img(guest_list[i])  # 显示未识别成员工的图片，请求用户指认该人脸姓名
                             name = input("Who is this(name)? Please watch the image on your right side.\n")
                             face_register(online_client, guest_list[i], 'employee', name)  # 录入姓名
+
+                            # 在上传的同时更新本地出勤表
                             ws.write(len(usr_list) + 2, 0, name)
                             ws.write(len(usr_list) + 2, 1, 'Registered')
                             ws.write(len(usr_list) + 2, 2, time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()))
+
                             type_flag = 0
+
                     elif regist_flag == 'N' or regist_flag == 'n':
                         for j in range(0, unreco_cnt):
                             face_register(online_client, guest_list[j], 'guest', time.strftime("%Y%m%d%H%M%S"
                                                                                                , time.localtime()))
                             type_flag = 0  # 如果录入成功则改变flag终止循环
+
                     else:
                         print('Invalid Command.')
 
+            print('\n', '*' * 50, '\n')
+
         if k & 0xFF == ord('o'):
+            # 请求输入导出出勤表的路径
             output_path = input("Please input output path (Backspace for default path):")
+
+            # 设置空格为默认路径
             if output_path == ' ':
                 shutil.copy('./log/employee.xls', './')
                 print('File has been saved to ' + os.path.dirname(os.path.abspath('./employee.xls')))
+
             elif os.path.exists(output_path):
                 shutil.copy('./log/employee.xls', output_path)
                 print('File has been saved to ' + output_path)
+
             else:
+                # 无效路径
                 print('Invalid path.')
 
         # 设置摄像头窗口的相关参数
         cv2.namedWindow("camera", 1)
         cv2.imshow("camera", img_rd)
 
-    cap.release()
+    cap.release()  # 释放摄像头
 
     if not cap.isOpened():  # 检测摄像头状态
         print("Camera is off.")
@@ -362,14 +392,14 @@ def live_cam_detect(ss_path, sep_path, cc_path, usr_list):
 print('Initiallizing ...')
 
 userList = initialize(online_client)
+
 # network_test() 测试功能哈哈哈，先不用。用于监测网络连接状态
 
+# 创建程序所需的目录
 separate_path, screenshot_path, cache_path = makedir()
 
+# 程序核心函数，打开摄像头并开始接收指令
 live_cam_detect(screenshot_path, separate_path, cache_path, userList)
 
+# 程序结束前自动打开本次运行记录的出勤表
 os.system('open ' + os.path.dirname(os.path.abspath('./log/employee.xls')) + '/employee.xls')
-
-
-
-
