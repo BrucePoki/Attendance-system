@@ -10,6 +10,7 @@ import os  # 调用系统功能，路径，控制台等
 import cv2  # opencv，用于图像识别和摄像头等
 import matplotlib.pyplot as plt  # 图像显示
 
+from tkinter import messagebox
 from PIL import Image  # 图像处理
 from aip import AipFace  # AI core
 from xlutils.copy import copy  # Excel相关
@@ -31,15 +32,13 @@ def network_test():
     """
 临时起意想写的测试网络的小函数。。。
     """
-    flag = 1
-    while flag:
-        exit_code = os.system('ping -c 3 www.baidu.com')
-        if exit_code:
-            wx.MessageBox('Connection Lost.\nThis software requires Online Network.\nNext connection check in 10s')
-            time.sleep(10)
-        else:
-            print('Network Connection checked sucessful.')
-            flag = 0
+    exit_code = os.system('ping -c 3 www.baidu.com')
+    if exit_code:
+        messagebox.showinfo('Ops!', 'Connection Lost.\n'
+                                    'This software requires Online Network.')
+        exit(1)
+    else:
+        print('Network Connection checked sucessful.')
 
 
 def makedir():
