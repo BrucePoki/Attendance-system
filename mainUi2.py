@@ -1,4 +1,4 @@
-import wx
+import wx  # 图形界面库
 import xlwt  # Excel表格相关
 import xlrd  # Excel表格相关
 import dlib  # 人脸识别核心库
@@ -35,8 +35,7 @@ def network_test():
     while flag:
         exit_code = os.system('ping -c 3 www.baidu.com')
         if exit_code:
-            print('Connection Lost.\nThis software requires Online Network.')
-            print('Next connection check in 10s')
+            wx.MessageBox('Connection Lost.\nThis software requires Online Network.\nNext connection check in 10s')
             time.sleep(10)
         else:
             print('Network Connection checked sucessful.')
@@ -290,9 +289,6 @@ def live_cam_detect(sep_path, cc_path, usr_list, self):
 
     self.cap.release()  # 释放摄像头
 
-    if not self.cap.isOpened():  # 检测摄像头状态
-        print("Camera is off.")
-
     cv2.destroyAllWindows()  # 关闭所有窗口
 
 
@@ -302,6 +298,7 @@ class face_emotion(wx.Frame):
         wx.Frame.__init__(self, parent, title=title, size=(1024, 768))
         self.panel = wx.Panel(self)
         self.Center()
+
 
         # 封面图片
         self.image_cover = wx.Image(COVER, wx.BITMAP_TYPE_ANY).Scale(960, 720)
@@ -455,14 +452,16 @@ class face_emotion(wx.Frame):
     def view_log(self,event):
         os.system('open ' + os.path.dirname(os.path.abspath('./log/employee.xls')) + '/employee.xls')
 
-class main_app(wx.App):
+
+class mainApp(wx.App):
     # OnInit 方法在主事件循环开始前被wxPython系统调用，是wxpython独有的
     def OnInit(self):
-        self.frame = face_emotion(parent=None,title="Face")
-        self.frame.Show(True)
+        frame = face_emotion(parent=None, title="Work Attendance System")
+        frame.Show(True)
         return True
 
 
 if __name__ == "__main__":
-    app = main_app()
+    network_test()
+    app = mainApp()
     app.MainLoop()
