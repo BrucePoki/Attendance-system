@@ -242,9 +242,13 @@ def live_cam_detect(sep_path, cc_path, usr_list, self):
     self.sep_path = sep_path
     self.cc_path = cc_path
     self.usr_list = usr_list
-
-    # 开启笔记本默认摄像头
-    self.cap = cv2.VideoCapture(0)
+    try:
+        if self.cap.isOpened():
+            wx.MessageBox('Camera has already opened!', caption='exucese me???')
+            return 1
+    except AttributeError:
+        # 开启笔记本默认摄像头
+        self.cap = cv2.VideoCapture(0)
 
     # 设置分辨率及格式
     self.cap.set(3, 480)
@@ -308,21 +312,23 @@ class face_emotion(wx.Frame):
         close_button = wx.Button(self.panel, label='Camera Off')
         confirm_button = wx.Button(self.panel, label='Check in')
         viewlog_button = wx.Button(self.panel, label='View Log')
+        about_us_button = wx.Button(self.panel, label='About Us')
 
         self.Bind(wx.EVT_BUTTON, self.learning_face, start_button)
         self.Bind(wx.EVT_BUTTON, self.close_face, close_button)
         self.Bind(wx.EVT_BUTTON, self.confirm_face, confirm_button)
         self.Bind(wx.EVT_BUTTON, self.view_log, viewlog_button)
-
+        self.Bind(wx.EVT_BUTTON, self.about_us, about_us_button)
         # 基于GridBagSizer的界面布局
         # 先实例一个对象
         self.grid_bag_sizer = wx.GridBagSizer(hgap=5, vgap=5)
         # 注意pos里面是先纵坐标后横坐标
         self.grid_bag_sizer.Add(self.bmp, pos=(0, 0), flag=wx.ALL | wx.EXPAND, span=(4, 4), border=5)
-        self.grid_bag_sizer.Add(start_button, pos=(4, 1), flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL, span=(1, 1), border=5)
-        self.grid_bag_sizer.Add(close_button, pos=(4, 2), flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL, span=(1, 1), border=5)
-        self.grid_bag_sizer.Add(confirm_button, pos=(4, 3), flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL, span=(1, 1), border=5)
-        self.grid_bag_sizer.Add(viewlog_button, pos=(4, 4), flag=wx.ALL | wx.ALIGN_CENTER_VERTICAL, span=(1, 1), border=5)
+        self.grid_bag_sizer.Add(start_button, pos=(4, 0), flag=wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, span=(1, 1), border=5)
+        self.grid_bag_sizer.Add(close_button, pos=(4, 1), flag=wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, span=(1, 1), border=5)
+        self.grid_bag_sizer.Add(confirm_button, pos=(4, 2), flag=wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, span=(1, 1), border=5)
+        self.grid_bag_sizer.Add(viewlog_button, pos=(4, 3), flag=wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, span=(1, 1), border=5)
+        self.grid_bag_sizer.Add(about_us_button, pos=(4, 4), flag=wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, span=(1, 1), border=5)
 
         self.grid_bag_sizer.AddGrowableCol(0, 1)
         # grid_bag_sizer.AddGrowableCol(0,2)
@@ -449,15 +455,24 @@ class face_emotion(wx.Frame):
 
     def close_face(self,event):
         """关闭摄像头，显示封面页"""
-        self.cap.release()
-        if not self.cap.isOpened():
-            print('Camera is off.')
-        self.bmp.SetBitmap(wx.Bitmap(self.image_cover))
-        self.grid_bag_sizer.Fit(self)
+        try:
+            self.cap.release()
+            if not self.cap.isOpened():
+                print('Camera is off.')
+            self.bmp.SetBitmap(wx.Bitmap(self.image_cover))
+            self.grid_bag_sizer.Fit(self)
+        except AttributeError:
+            wx.MessageBox('Camera is NOT open.', caption='Ops!')
+            return 1
+
 
     def view_log(self,event):
         os.system('open ' + os.path.dirname(os.path.abspath('./log/employee.xls')) + '/employee.xls')
 
+    def about_us(self, event):
+        wx.MessageBox('Tech Guy: Bruce(蒋正韬) '
+                      'Info Guy:Churchill(江文思) Major class:CE 1703  Computer academy    CSU'
+                      , caption="About Us")
 
 class mainApp(wx.App):
     # OnInit 方法在主事件循环开始前被wxPython系统调用，是wxpython独有的

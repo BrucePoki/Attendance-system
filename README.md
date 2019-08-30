@@ -16,3 +16,4 @@
 
 学长的思路借鉴：[https://github.com/inspurer/WorkAttendanceSystem](https://github.com/inspurer/WorkAttendanceSystem)
 
+扩展内容：视频流嵌入 [http://blog.sina.com.cn/s/blog_49b3ba190102yukm.html](http://blog.sina.com.cn/s/blog_49b3ba190102yukm.html)
