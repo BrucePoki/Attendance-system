@@ -149,9 +149,15 @@ def face_separate(cc_path, sep_path, detector):
 
         img_blank = np.zeros((height, width, 3), np.uint8)  # 设置剪切图片的宽高
 
-        for i in range(height):
-            for j in range(width):
-                img_blank[i][j] = img[d.top() + i][d.left() + j]
+        try:
+            # bug record: 如果只出现半张脸会出现检测下标超过边界 IndexError
+            for i in range(height):
+                for j in range(width):
+                    img_blank[i][j] = img[d.top() + i][d.left() + j]
+        except IndexError:
+            print('IndexError...')
+            print('Facial info must be FULLY contained!!\n')
+            return 0
 
         # print("Save to: ", path_save + "img_face_", str(k + 1) + ".jpg")
         cv2.imwrite(path_save + "img_face_" + str(k + 1) + ".jpg", img_blank)  # 依次写入剪切的图片
@@ -274,7 +280,7 @@ def live_cam_detect(ss_path, sep_path, cc_path, usr_list):
                             , cv2.LINE_AA)
 
             else:  # 如果人脸数为零则显示没有脸
-                cv2.putText(img_rd, "no face", (20, 350), font, 0.8, (0, 0, 0), 1, cv2.LINE_AA)
+                cv2.putText(img_rd, "no face", (20, 350), font, 0.8, (255, 215, 0), 2, cv2.LINE_AA)
 
             # 注明指令和要求并设置字体格式 字体：HERSHEY_SIMPLEX 颜色：GOLD 粗细：2
             img_rd = cv2.putText(img_rd, "Press 'S': Screen shot", (20, 400), font, 0.8, (255, 215, 0), 2,
@@ -283,6 +289,9 @@ def live_cam_detect(ss_path, sep_path, cc_path, usr_list):
                                  cv2.LINE_AA)
             img_rd = cv2.putText(img_rd, "Press 'Q': Quit", (20, 500), font, 0.8, (255, 215, 0), 2, cv2.LINE_AA)
             img_rd = cv2.putText(img_rd, "Press 'O': Output", (20, 550), font, 0.8, (255, 215, 0), 2, cv2.LINE_AA)
+            img_rd = cv2.putText(img_rd, "Press 'V': View Excel", (20, 600), font, 0.8, (255, 215, 0), 2, cv2.LINE_AA)
+            img_rd = cv2.putText(img_rd, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()), (900, 50), font, 0.8
+                                 , (255, 255, 0), 2, cv2.LINE_AA)
 
         # s键保存截图，仅作为初期测试用功能
         if k & 0xFF == ord('s'):
@@ -313,12 +322,18 @@ def live_cam_detect(ss_path, sep_path, cc_path, usr_list):
                     if result['result']['user_list'][0]['score'] >= 80:  # 相似度阀值定为80
                         stuff_list.append(result['result']['user_list'][0]['user_id'])
                         reco_cnt += 1
-                        print('* *Welcome ', stuff_list[reco_cnt - 1], '! Check in successful.* *')
 
-                        # 打开已经初始化的表格准备修改状态
                         rb = xlrd.open_workbook('./log/employee.xls')
                         wb = copy(rb)
                         ws = wb.get_sheet(0)
+                        sheet1 = rb.sheet_by_index(0)
+
+                        if sheet1.cell_value(usr_list.index(stuff_list[reco_cnt - 1]) + 1, 1) == 'Registered':
+                            print("* * ", stuff_list[reco_cnt - 1], ' has already checked in. * *')
+                        else:
+                            print('* *Welcome ', stuff_list[reco_cnt - 1], '! Check in successful.* *')
+
+                        # 打开已经初始化的表格准备修改状态
                         ws.write(usr_list.index(stuff_list[reco_cnt - 1]) + 1, 1, 'Registered')
                         ws.write(usr_list.index(stuff_list[reco_cnt - 1]) + 1, 2, time.strftime("%Y-%m-%d %H:%M:%S"
                                                                                                 , time.localtime()))
@@ -341,10 +356,16 @@ def live_cam_detect(ss_path, sep_path, cc_path, usr_list):
                             name = input("Who is this(name)? Please watch the image on your right side.\n")
                             face_register(online_client, guest_list[i], 'employee', name)  # 录入姓名
 
+                            rb = xlrd.open_workbook('./log/employee.xls')
+                            wb = copy(rb)
+                            ws = wb.get_sheet(0)
+
                             # 在上传的同时更新本地出勤表
                             ws.write(len(usr_list) + 2, 0, name)
                             ws.write(len(usr_list) + 2, 1, 'Registered')
                             ws.write(len(usr_list) + 2, 2, time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime()))
+
+                            wb.save('./log/employee.xls')
 
                             type_flag = 0
 
@@ -376,6 +397,10 @@ def live_cam_detect(ss_path, sep_path, cc_path, usr_list):
                 # 无效路径
                 print('Invalid path.')
 
+        if k & 0xFF == ord('v'):
+            # 查看当前签到信息
+            os.system('open ' + os.path.dirname(os.path.abspath('./log/employee.xls')) + '/employee.xls')
+
         # 设置摄像头窗口的相关参数
         cv2.namedWindow("camera", 1)
         cv2.imshow("camera", img_rd)
@@ -391,7 +416,7 @@ def live_cam_detect(ss_path, sep_path, cc_path, usr_list):
 # 主函数部分
 print('Initiallizing ...')
 
-# network_test() 测试功能哈哈哈，先不用。用于监测网络连接状态
+# network_test()  # 测试功能哈哈哈，先不用。用于监测网络连接状态
 
 # 创建程序所需的目录
 separate_path, screenshot_path, cache_path = makedir()
@@ -401,5 +426,8 @@ userList = initialize(online_client)
 # 程序核心函数，打开摄像头并开始接收指令
 live_cam_detect(screenshot_path, separate_path, cache_path, userList)
 
+# sys.stdout = module_test.Logger('./log/a.txt')  # 控制台输出日志
+
 # 程序结束前自动打开本次运行记录的出勤表
 os.system('open ' + os.path.dirname(os.path.abspath('./log/employee.xls')) + '/employee.xls')
+
