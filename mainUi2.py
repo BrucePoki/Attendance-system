@@ -353,6 +353,13 @@ class face_emotion(wx.Frame):
         live_cam_detect(separate_path, cache_path, self.userList, self)
 
     def confirm_face(self, event):
+        try:
+            if not self.cap.isOpened():
+                print('hh')
+        except AttributeError:
+            wx.MessageBox('Open the Camera first!', caption='Error')
+            return 1
+
         print('\n', '*' * 50, '\n')
         print("Face info confirmed, detecting ...")
         cv2.imwrite(self.cc_path + "confirm_cache.jpg", self.img_rd)  # 将截图写入缓存路径
