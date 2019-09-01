@@ -302,7 +302,6 @@ class face_emotion(wx.Frame):
         self.panel = wx.Panel(self)
         self.Center()
 
-
         # 封面图片
         self.image_cover = wx.Image(COVER, wx.BITMAP_TYPE_ANY).Scale(960, 720)
         # 显示图片在panel上
@@ -319,6 +318,7 @@ class face_emotion(wx.Frame):
         self.Bind(wx.EVT_BUTTON, self.confirm_face, confirm_button)
         self.Bind(wx.EVT_BUTTON, self.view_log, viewlog_button)
         self.Bind(wx.EVT_BUTTON, self.about_us, about_us_button)
+
         # 基于GridBagSizer的界面布局
         # 先实例一个对象
         self.grid_bag_sizer = wx.GridBagSizer(hgap=5, vgap=5)
@@ -361,7 +361,8 @@ class face_emotion(wx.Frame):
     def confirm_face(self, event):
         try:
             if not self.cap.isOpened():
-                print('hh')
+                wx.MessageBox('Open the Camera first!', caption='Error')
+                return 1
         except AttributeError:
             wx.MessageBox('Open the Camera first!', caption='Error')
             return 1
@@ -456,6 +457,9 @@ class face_emotion(wx.Frame):
     def close_face(self,event):
         """关闭摄像头，显示封面页"""
         try:
+            if not self.cap.isOpened():
+                wx.MessageBox('Camera is NOT open.', caption='Ops!')
+                return 1
             self.cap.release()
             if not self.cap.isOpened():
                 print('Camera is off.')
@@ -464,7 +468,6 @@ class face_emotion(wx.Frame):
         except AttributeError:
             wx.MessageBox('Camera is NOT open.', caption='Ops!')
             return 1
-
 
     def view_log(self,event):
         os.system('open ' + os.path.dirname(os.path.abspath('./log/employee.xls')) + '/employee.xls')
