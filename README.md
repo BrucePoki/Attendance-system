@@ -2,6 +2,8 @@
 
 ### 参考资料
 
+[http://dlib.net/](http://dlib.net/)
+
 [https://wxpython.org/](https://wxpython.org/)
 
 [http://www.cnblogs.com/AdaminXie](http://www.cnblogs.com/AdaminXie)
