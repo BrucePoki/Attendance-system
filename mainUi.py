@@ -1,11 +1,11 @@
-import wx
-import xlwt  # Excel表格相关
-import xlrd  # Excel表格相关
+import wx  # 图形界面依赖库
+import xlwt  # Excel表格写
+import xlrd  # Excel表格读
 import dlib  # 人脸识别核心库
 import time  # 用于获取当前时间
 import shutil  # 文件的相关操作
 import numpy as np  # 人脸识别相关
-import base64  # for encode use
+import base64  # base64编码器
 import os  # 调用系统功能，路径，控制台等
 import cv2  # opencv，用于图像识别和摄像头等
 import matplotlib.pyplot as plt  # 图像显示
@@ -47,7 +47,7 @@ def makedir():
 初始化创建必需的缓存文件夹。包括截图文件夹，人脸分离文件夹以及人脸检测缓存文件夹
     :return: 返回三种文件夹的路径str
     """
-    root_path = os.path.dirname(os.path.abspath(__file__))  # 获取main.py所在文件夹的绝对路径
+    root_path = os.path.dirname(os.path.abspath(__file__))  # 获取该源文件所在文件夹的绝对路径
 
     # 直观地创建三个文件夹的路径
     sep_path = root_path + "/screenshots/faces_separated/"

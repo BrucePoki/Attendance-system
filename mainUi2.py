@@ -10,16 +10,15 @@ import os  # 调用系统功能，路径，控制台等
 import cv2  # opencv，用于图像识别和摄像头等
 import matplotlib.pyplot as plt  # 图像显示
 
-from tkinter import messagebox
 from PIL import Image  # 图像处理
 from aip import AipFace  # AI core
 from xlutils.copy import copy  # Excel相关
+from tkinter import messagebox  # 用于弹出简易的消息框
 
 COVER = './venv/csu.jpg'
 main1 = "./venv/icon.png"
 main2 = "./venv/csu.jpg"
 file_path = os.getcwd()+r'\data\logcat.csv'
-# 一般GUI程序的最外层框架使用wx.Frame
 
 '''APP Detail'''
 APP_ID = '17074468'
@@ -31,6 +30,7 @@ online_client = AipFace(APP_ID, API_ID, SECRET_KEY)  # Online detect client
 def network_test():
     """
 临时起意想写的测试网络的小函数。。。
+如果网络状态不好，则会在message box弹出消息要求网络连接。
     """
     exit_code = os.system('ping -c 3 www.baidu.com')
     if exit_code:
@@ -43,10 +43,10 @@ def network_test():
 
 def makedir():
     """
-初始化创建必需的缓存文件夹。包括截图文件夹，人脸分离文件夹以及人脸检测缓存文件夹
+初始化创建必需的缓存文件夹。包括截图文件夹，人脸分离文件夹、人脸检测缓存文件夹，考勤日志存储文件夹
     :return: 返回三种文件夹的路径str
     """
-    root_path = os.path.dirname(os.path.abspath(__file__))  # 获取main.py所在文件夹的绝对路径
+    root_path = os.path.dirname(os.path.abspath(__file__))  # 获取当前源文件所在文件夹的绝对路径
 
     # 直观地创建三个文件夹的路径
     sep_path = root_path + "/screenshots/faces_separated/"
@@ -79,7 +79,8 @@ def initialize(client):
     """
     if os.path.exists("./log/employee.xls"):
         # 如果原存储员工表格的路径已经存在则转移到日志记录路径作为保存
-        shutil.move("./log/employee.xls", "./log/record/" + time.strftime("%Y%m%d%H%M%S", time.localtime()) + '.xls')
+        shutil.move("./log/employee.xls", "./log/record/"
+                    + time.strftime("%Y%m%d%H%M%S", time.localtime()) + '.xls')
     xls = xlwt.Workbook()  # 创建Excel表格文件
     sht1 = xls.add_sheet('Sheet1')  # 创建工作表
 
@@ -109,7 +110,7 @@ def show_img(path):
     plt.figure('Guest')
     plt.imshow(img)
     plt.axis('off')
-    plt.show()  # 显示函数
+    plt.show()  # 显示图片函数
 
 
 def clear_images(path_save, path_cache):
@@ -233,7 +234,7 @@ def face_register(client, read_path, group_id, usr_name):
 def live_cam_detect(sep_path, cc_path, usr_list, self):
     """
 程序核心函数，主要利用opencv使用摄像头，然后调用上述函数进行完整的程序过程
-    :param self:
+    :param self:在类中使用
     :param usr_list: 从参数入口传入初始化获取的员工列表
     :param sep_path: separate路径
     :param cc_path: 缓存路径
@@ -324,11 +325,16 @@ class face_emotion(wx.Frame):
         self.grid_bag_sizer = wx.GridBagSizer(hgap=5, vgap=5)
         # 注意pos里面是先纵坐标后横坐标
         self.grid_bag_sizer.Add(self.bmp, pos=(0, 0), flag=wx.ALL | wx.EXPAND, span=(4, 4), border=5)
-        self.grid_bag_sizer.Add(start_button, pos=(4, 0), flag=wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, span=(1, 1), border=5)
-        self.grid_bag_sizer.Add(close_button, pos=(4, 1), flag=wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, span=(1, 1), border=5)
-        self.grid_bag_sizer.Add(confirm_button, pos=(4, 2), flag=wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, span=(1, 1), border=5)
-        self.grid_bag_sizer.Add(viewlog_button, pos=(4, 3), flag=wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, span=(1, 1), border=5)
-        self.grid_bag_sizer.Add(about_us_button, pos=(4, 4), flag=wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, span=(1, 1), border=5)
+        self.grid_bag_sizer.Add(start_button, pos=(4, 0),
+                                flag=wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, span=(1, 1), border=5)
+        self.grid_bag_sizer.Add(close_button, pos=(4, 1),
+                                flag=wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, span=(1, 1), border=5)
+        self.grid_bag_sizer.Add(confirm_button, pos=(4, 2),
+                                flag=wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, span=(1, 1), border=5)
+        self.grid_bag_sizer.Add(viewlog_button, pos=(4, 3),
+                                flag=wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, span=(1, 1), border=5)
+        self.grid_bag_sizer.Add(about_us_button, pos=(4, 4),
+                                flag=wx.EXPAND | wx.ALIGN_CENTER_VERTICAL, span=(1, 1), border=5)
 
         self.grid_bag_sizer.AddGrowableCol(0, 1)
         # grid_bag_sizer.AddGrowableCol(0,2)
@@ -347,6 +353,10 @@ class face_emotion(wx.Frame):
         self.userList = initialize(online_client)
 
     def _learning_face(self,event):
+        """
+GUI程序核心调用函数，用于开启摄像头并能够执行后续相关程序
+        :param event: 类要求，实际并未显式调用
+        """
         # 主函数部分
         print('Initiallizing ...')
 
@@ -359,6 +369,13 @@ class face_emotion(wx.Frame):
         live_cam_detect(separate_path, cache_path, self.userList, self)
 
     def confirm_face(self, event):
+        """
+这个确认签到函数是在第二版程序最后加上的，因为要满足指令移除出摄像头画面的要求，我们单独写了一个签到函数
+实际上就是把第一个版本的注册函数单独从live_cam_detect中分离了出来做成一个按钮
+        :param event: 类要求，实际并未显式调用
+        :return: 事实上这个函数是没有返回值的，只有message box对于当前状态的提示
+        只有在出错的情况话才会返回1，表示出了问题
+        """
         try:
             if not self.cap.isOpened():
                 wx.MessageBox('Open the Camera first!', caption='Error')
@@ -421,11 +438,12 @@ class face_emotion(wx.Frame):
                 for i in range(0, unreco_cnt):
                     os.system('open ' + guest_list[i])
                     # show_img(guest_list[i])  # 显示未识别成员工的图片，请求用户指认该人脸姓名
-                    dialog = wx.TextEntryDialog(None, "Who is this?", 'Info input', ' ')
-                    if dialog.ShowModal() == wx.ID_OK:
-                        response = dialog.GetValue()
+                    dialog = wx.TextEntryDialog(None, "Who is this?", 'Info input', ' ')  # 创建对话框
+                    if dialog.ShowModal() == wx.ID_OK:  # 检查是否注册状态
+                        response = dialog.GetValue()  # 获取输入框中用户输入的姓名
                         face_register(online_client, guest_list[i], 'employee', response)  # 录入姓名
 
+                        # 开始表格相关初始化，准备修改
                         rb = xlrd.open_workbook('./log/employee.xls')
                         wb = copy(rb)
                         ws = wb.get_sheet(0)
@@ -437,7 +455,7 @@ class face_emotion(wx.Frame):
 
                         wb.save('./log/employee.xls')
 
-                    else:
+                    else:  # 如果选择了否，开始执行guest组上传程序
                         for j in range(0, unreco_cnt):
                             face_register(online_client, guest_list[j], 'guest', time.strftime("%Y%m%d%H%M%S"
                                                                                                , time.localtime()))
@@ -449,13 +467,20 @@ class face_emotion(wx.Frame):
         print('\n', '*' * 50, '\n')
 
     def learning_face(self, event):
-        """使用多线程，子线程运行后台的程序，主线程更新前台的UI，这样不会互相影响"""
+        """
+使用多线程，子线程运行后台的程序，主线程更新前台的UI，这样不会互相影响
+        :param event: 类要求，实际并未显式调用
+        """
         import _thread
         # 创建子线程，按钮调用这个方法，
         _thread.start_new_thread(self._learning_face, (event,))
 
     def close_face(self,event):
-        """关闭摄像头，显示封面页"""
+        """
+关闭摄像头，显示封面页
+        :param event: 类要求，实际并未显式调用
+        :return: 如果有异常抛出，则返回1
+        """
         try:
             if not self.cap.isOpened():
                 wx.MessageBox('Camera is NOT open.', caption='Ops!')
@@ -470,9 +495,17 @@ class face_emotion(wx.Frame):
             return 1
 
     def view_log(self,event):
+        """
+查看当前日志记录，语句比较简单，利用控制台直接打开表格文件。
+        :param event: 类要求，实际并未显式调用
+        """
         os.system('open ' + os.path.dirname(os.path.abspath('./log/employee.xls')) + '/employee.xls')
 
     def about_us(self, event):
+        """
+就是弹出一个简单介绍我们的框
+        :param event: 类要求，实际并未显式调用
+        """
         wx.MessageBox('Tech Guy: Bruce(蒋正韬) '
                       'Info Guy:Churchill(江文思) Major class:CE 1703  Computer academy    CSU'
                       , caption="About Us")
