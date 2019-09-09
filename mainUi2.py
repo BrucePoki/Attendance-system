@@ -438,10 +438,10 @@ GUI程序核心调用函数，用于开启摄像头并能够执行后续相关�
                 for i in range(0, unreco_cnt):
                     os.system('open ' + guest_list[i])
                     # show_img(guest_list[i])  # 显示未识别成员工的图片，请求用户指认该人脸姓名
-                    dialog = wx.TextEntryDialog(None, "Who is this?", 'Info input', ' ')  # 创建对话框
+                    dialog = wx.TextEntryDialog(None, "Who is this?", 'Info input', '')  # 创建对话框
                     if dialog.ShowModal() == wx.ID_OK:  # 检查是否注册状态
                         response = dialog.GetValue()  # 获取输入框中用户输入的姓名
-                        face_register(online_client, guest_list[i], 'employee', response)  # 录入姓名
+                        face_register(online_client, guest_list[i], 'employee', str(response))  # 录入姓名
 
                         # 开始表格相关初始化，准备修改
                         rb = xlrd.open_workbook('./log/employee.xls')
